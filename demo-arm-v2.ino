@@ -13,10 +13,13 @@ int servo2Pos = 90;  // Starting at middle position
 int servo3Pos = 180; // Starting at open position
 
 bool joyButtonPrevState = HIGH;
+bool servo3MovingToClose = false; // Track direction of servo 3 movement
+bool servo3Moving = false; // Track if servo 3 is moving
 
 const int deadzone = 50;  // Deadzone for joystick center position
 const int joystickCenter = 512;  // Center value for analog read
 const int maxSpeed = 3;  // Maximum speed of servo movement per loop
+const int servo3MoveSpeed = 5; // Speed for servo 3 movement
 
 void setup() {
   servo1.attach(9);
@@ -56,15 +59,30 @@ void loop() {
   
   // Toggle Servo 3 between 0 and 180 degrees when joystick button is pressed
   bool joyButtonState = digitalRead(joyButton);
-  if (joyButtonState == LOW && joyButtonPrevState == HIGH) {
+  if (joyButtonState == LOW && joyButtonPrevState == HIGH && !servo3Moving) {
     // Button just pressed
-    if (servo3Pos == 180) {
-      servo3Pos = 0;  // Close position
+    servo3MovingToClose = (servo3Pos == 180);
+    servo3Moving = true; // Start moving servo 3
+  }
+
+  // Move servo 3 gradually
+  if (servo3Moving) {
+    if (servo3MovingToClose) {
+      servo3Pos -= servo3MoveSpeed;
+      if (servo3Pos <= 0) {
+        servo3Pos = 0;
+        servo3Moving = false; // Stop movement
+      }
     } else {
-      servo3Pos = 180;  // Open position
+      servo3Pos += servo3MoveSpeed;
+      if (servo3Pos >= 180) {
+        servo3Pos = 180;
+        servo3Moving = false; // Stop movement
+      }
     }
     servo3.write(servo3Pos);
   }
+  
   joyButtonPrevState = joyButtonState;
   
   delay(15); // Small delay for stability
